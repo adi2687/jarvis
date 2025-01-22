@@ -42,7 +42,7 @@ def stop_response():
     global stop_flag
     stop_flag = True
     output_label.config(text="Jarvis: Stopping...") 
-def handle_command(jarvis):
+def voice_input(jarvis):
         recognizer = sr.Recognizer()
         recognizer.dynamic_energy_threshold = True
 
@@ -56,6 +56,7 @@ def handle_command(jarvis):
                     audio = recognizer.listen(source, timeout=10, phrase_time_limit=10)
 
                     command = recognizer.recognize_google(audio).lower()
+                    get_response(command)
             except sr.UnknownValueError:
                 jarvis.say("I couldn't understand that. Please try again.")
                 jarvis.runAndWait()
@@ -87,6 +88,33 @@ stop_button = tk.Button(
     relief="flat"
 )
 stop_button.place(x=180, y=70, width=100, height=35)
+
+voice_button = tk.Button(
+    root,
+    text="🎤",  # Use a microphone emoji for better representation
+    command=lambda: voice_input(setup_jarvis()),
+    font=("Helvetica", 14, "bold"),
+    bg="#007BFF",  # Blue background color
+    fg="#FFFFFF",  # White text color
+    activebackground="#0056b3",  # Darker blue for active state
+    activeforeground="#FFFFFF",  # White text when active
+    bd=0,
+    relief="flat"
+)
+
+# Set dimensions for a circular appearance
+button_size = 50  # Button size (width and height)
+voice_button.place(
+    x=root.winfo_screenwidth() - button_size - 20,  # Rightmost side with padding
+    y=20,  # Top padding
+    width=button_size,
+    height=button_size
+)
+
+# To make it circular, apply rounded corners using the canvas
+voice_button.config(borderwidth=0, highlightthickness=0)
+voice_button.place(x=290,y=70,width=100,height=35)
+
 def display_text():
     user_text = input_box.get()
     if user_text.strip():
