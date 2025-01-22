@@ -59,6 +59,7 @@ def main():
                     recognizer.adjust_for_ambient_noise(source, duration=0.5)
                     jarvis.say("Listening for your command...")
                     jarvis.runAndWait()
+                
                     audio = recognizer.listen(source, timeout=10, phrase_time_limit=10)
 
                     command = recognizer.recognize_google(audio).lower()
