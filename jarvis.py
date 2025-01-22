@@ -86,7 +86,7 @@ def main():
                         query = command.replace("youtube", "").strip()
                         if not query:  # If no query provided
                             jarvis.say("What should I search for?")
-                            jarvis.runAndWait()
+                            jarvis.runAndWait() 
                             audio = recognizer.listen(source, timeout=10, phrase_time_limit=10)
                             query = recognizer.recognize_google(audio).lower()
                         response = youtube_search(query)
@@ -149,4 +149,4 @@ def main():
 
     wake_word_listener()
 
-
+main()
