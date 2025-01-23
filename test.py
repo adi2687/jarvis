@@ -209,10 +209,7 @@ chat_hist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 scrollbar = tk.Scrollbar(frame, command=chat_hist.yview)
 scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-# Configure the scrollbar with the Text widget
 chat_hist.config(yscrollcommand=scrollbar.set)
-
-# Function to display the chat
 def display_chat():
     try:
         with open('Data/ChatLog.json', "r") as file:
@@ -225,7 +222,7 @@ def display_chat():
             for entry in chat_log:
                 role = entry.get("role", "Unknown").capitalize()
                 content = entry.get("content", "No content provided")
-                formatted_chat += f"{role}: {content}\n\n"
+                formatted_chat += f"{role}: {content}\n"
 
             chat_hist.insert(tk.END, formatted_chat)
             chat_hist.config(state="disabled")  # Disable editing after updating

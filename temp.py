@@ -36,7 +36,7 @@ def trigger_reminder(message):
     print(f"Reminder: {message}")
 
 # Example usage
-setup_reminder("remind me to call at 10:50 AM")
+setup_reminder("remind me to call at 12:42 AM")
 
 # Keep the script running for reminders to work
 while True:
