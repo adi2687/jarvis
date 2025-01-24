@@ -8,7 +8,4 @@ def volume_up():
     
 def volume_down():
     keyboard.press_and_release("volume down") 
-inp=int(input("Enter the voome to decrease"))
-for i in range(inp):
-        volume_down()
-# unmute()
+mute()

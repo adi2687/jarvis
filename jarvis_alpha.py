@@ -110,7 +110,7 @@ def speak(jarvis,text):
     print(text)
     jarvis.say(text)
     jarvis.runAndWait()
-    
+stop=False
 def main(user_input):
     jar = setup_jarvis()
     # while True:
@@ -119,8 +119,9 @@ def main(user_input):
         # Exit condition
     if user_input.lower() in ["exit", "quit", "bye"]:
         print("Goodbye!")
-        speak(jar, "Goodbye!")
-            # break
+        if not stop:
+            speak(jar, "Goodbye!")
+        else:jar.stop()
         
         # Process input and generate response
     response = RealtimeSearchEngine(user_input)

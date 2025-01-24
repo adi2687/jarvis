@@ -4,26 +4,26 @@ from jarvis_alpha import main,speak,setup_jarvis
 from PIL import Image, ImageSequence, ImageTk
 import speech_recognition as sr
 import json
+import keyboard
 root = tk.Tk()
 root.title("Jarvis")
 root.geometry("800x500")  # Adjust window size for proportions
 root.configure(bg="#000000")  # Sleek dark background
 stop_flag = False
+
 def get_response(user_text):
     global stop_flag
     try:
         submit_button.config(text="Waiting...", state="disabled")
-        
-        jarvis = setup_jarvis() 
+        jarvis = setup_jarvis()
         response = main(user_text)
-        
+
         retry_count = 0
-        max_retries = 10  
+        max_retries = 10
         while not response and retry_count < max_retries:
-            if stop_flag:  
+            if stop_flag:  # Check if stop flag is set
                 output_label.config(text="Jarvis: Stopped.")
-                break
-            print("waiting")
+                return  # Exit the function
             retry_count += 1
             
         if not response:
@@ -37,40 +37,57 @@ def get_response(user_text):
     finally:
         submit_button.config(text="Speak to Jarvis", state="normal")
 
+def voice_input():
+    global stop_flag
+    recognizer = sr.Recognizer()
+    recognizer.dynamic_energy_threshold = True
+    while not stop_flag:  # Continuously listen until stop_flag is set
+        try:
+            with sr.Microphone() as source:
+                recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                output_label.config(text="Jarvis: Listening for your command...")
+
+                audio = recognizer.listen(source, timeout=10, phrase_time_limit=10)
+                if stop_flag:  # Break immediately if stop_flag is set
+                    output_label.config(text="Jarvis: Listening stopped.")
+                    break
+                
+                command = recognizer.recognize_google(audio).lower()
+                output_label.config(text=f"Recognxized: {command}")
+                if "volume" in command:
+                    if "decrease" in command:
+                        # def volume_down():
+                            # just a fixed value for increase or decreasse
+                        for i in range(10):
+                            keyboard.press_and_release("volume down")
+                    elif "increase" in command:
+                        keyboard.press_and_release("volume-up")
+                elif "mute" or "unmute" in command:
+                    keyboard.press_and_release("volume-mute")
+                thread = Thread(target=get_response, args=(command,))
+                thread.start()
+        except sr.UnknownValueError:
+            if not stop_flag:  # Only show errors if not stopping
+                output_label.config(text="Jarvis: I couldn't understand that. Please try again.")
+        except sr.WaitTimeoutError:
+            if not stop_flag:
+                output_label.config(text="Jarvis: No input detected. Please try again.")
+        except sr.RequestError:
+            output_label.config(text="Jarvis: Issue with the recognition service.")
+        except Exception as e:
+            output_label.config(text=f"Jarvis: An unexpected error occurred: {e}")
 
 def stop_response():
     global stop_flag
-    stop_flag = True
-    output_label.config(text="Jarvis: Stopping...") 
-def voice_input():
-    recognizer = sr.Recognizer()
-    recognizer.dynamic_energy_threshold = True
+    stop_flag = True  # Set the flag to True to interrupt speaking
+    output_label.config(text="Jarvis: Speech stopped.")  # Update UI
 
-    try:
-        with sr.Microphone() as source:
-            recognizer.adjust_for_ambient_noise(source, duration=0.5)
-            output_label.config(text="Speak the commabd")
-            output_label.config(text="Jarvis: Listening for your command...")
-            
-            audio = recognizer.listen(source, timeout=10, phrase_time_limit=10)
-            
-            command = recognizer.recognize_google(audio).lower()
-            
-            output_label.config(text=f"Recognized: {command}")
-            
-            thread = Thread(target=get_response, args=(command,))
-            thread.start()
-    except sr.UnknownValueError:
-        output_label.config(text="Jarvis: I couldn't understand that. Please try again.")
-    except sr.WaitTimeoutError:
-        output_label.config(text="Jarvis: No input detected. Please try again.")
-    except sr.RequestError:
-        output_label.config(text="Jarvis: Issue with the recognition service.")
-    except Exception as e:
-        output_label.config(text=f"Jarvis: An unexpected error occurred: {e}")
+def voice_input_thread():
+    global stop_flag
+    stop_flag = False 
+    thread = Thread(target=voice_input)
+    thread.start()
 
-                
-# Add a Stop button below the Submit button
 stop_button = tk.Button(
     root,
     text="Stop",
@@ -92,25 +109,23 @@ def voice_input_thread():
 
 voice_button = tk.Button(
     root,
-    text="🎤",  # Use a microphone emoji for better representation
-    command=voice_input_thread,  # Run voice_input in a separate thread
+    text="🎤", 
+    command=voice_input_thread, 
     font=("Helvetica", 14, "bold"),
-    bg="#007BFF",  # Blue background color
-    fg="#FFFFFF",  # White text color
-    activebackground="#0056b3",  # Darker blue for active state
-    activeforeground="#FFFFFF",  # White text when active
+    bg="#007BFF",
+    fg="#FFFFFF",
+    activebackground="#0056b3",
+    activeforeground="#FFFFFF",
     bd=0,
     relief="flat"
 )
 
-# Set dimensions for a circular appearance
 button_size = 50  # Button size (width and height)
 voice_button.place(
     x=290, y=70, width=100, height=35
 )
 
 
-# To make it circular, apply rounded corners using the canvas
 voice_button.config(borderwidth=0, highlightthickness=0)
 voice_button.place(x=290,y=70,width=100,height=35)
 
@@ -123,7 +138,6 @@ def display_text():
     else:
         output_label.config(text="Jarvis: Please enter something!")
 
-# Function to animate the GIF
 def update_gif(frame_index=0):
     global frames
     frame = frames[frame_index]
@@ -131,11 +145,9 @@ def update_gif(frame_index=0):
     frame_index = (frame_index + 1) % len(frames)
     root.after(10, update_gif, frame_index)
 
-# Load GIF
 gif_path = "Sirifinal.gif"  # Replace with the path to your GIF
 image = Image.open(gif_path)
 
-# Resize GIF frames to fit 30% width and height of the page
 gif_width = int(root.winfo_screenwidth() * 0.5)
 gif_height = int(root.winfo_screenheight() * 0.9)
 frames = [
@@ -143,12 +155,10 @@ frames = [
     for frame in ImageSequence.Iterator(image)
 ]
 
-# GIF display in the center-right
 gif_label = tk.Label(root, bg="#000000")
 gif_label.place(relx=0.5, rely=0.5, anchor="center")  # Positioned at 70% width and center height
 update_gif()
 
-# Input box
 input_box = tk.Entry(
     root,
     font=("Helvetica", 14),
@@ -161,7 +171,6 @@ input_box = tk.Entry(
 )
 input_box.place(x=20, y=20, width=300, height=35)  # Top-left corner
 
-# Button below the input box
 submit_button = tk.Button(
     root,
     text="Speak to Jarvis",
@@ -176,7 +185,6 @@ submit_button = tk.Button(
 )
 submit_button.place(x=20, y=70, width=150, height=35)
 
-# Output text label
 output_label = tk.Label(    
     root,
     text="",
@@ -188,7 +196,6 @@ output_label = tk.Label(
 )
 output_label.place(x=10, y=120, anchor="nw")  # Positioned in the top-left corner
 
-# unknown option "-yscrollcommand"
 
 frame = tk.Frame(root, bg="#999999")
 frame.place(x=1000, y=60, anchor="nw")
@@ -205,7 +212,6 @@ chat_hist = tk.Text(
 )
 chat_hist.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-# Create a Scrollbar for the Text widget
 scrollbar = tk.Scrollbar(frame, command=chat_hist.yview)
 scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -217,7 +223,6 @@ def display_chat():
             chat_hist.config(state="normal")  # Allow editing to update content
             chat_hist.delete(1.0, tk.END)  # Clear the existing text
 
-            # Format and display chat content
             formatted_chat = ""
             for entry in chat_log:
                 role = entry.get("role", "Unknown").capitalize()
@@ -237,7 +242,6 @@ def display_chat():
         chat_hist.insert(tk.END, "Error: Chat log file is not a valid JSON.")
         chat_hist.config(state="disabled")
 
-# Button to display the chat log
 chatdisp = tk.Button(
     root,
     text="Previous Chat",
