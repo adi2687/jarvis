@@ -3,13 +3,10 @@ from tkinter import filedialog, Label, Button, Text, Scrollbar, VERTICAL, END, D
 from PIL import Image, ImageTk
 import google.generativeai as genai
 import os
-from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
-
+genai.configure(api_key=("AIzaSyC_vdf5ZoD7te2A-R2tpmL0GrZgGopODfQ"))
 # Configure the Generative AI API
-genai.configure(api_key=("AIzaSyBjoMgFR9t1f-4naS8mqCtcn5T7liHJero"))
 
 # Initialize the main application window
 root = tk.Tk()

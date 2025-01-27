@@ -100,7 +100,7 @@ def RealtimeSearchEngine(prompt):
         dump(messages, f, indent=4)
 
     return answer
-def setup_jarvis():
+def setup_nova():
     jarvis=pyttsx3.init()
     voices=jarvis.getProperty("voices")
     jarvis.setProperty('voice',voices[1].id)
@@ -112,7 +112,7 @@ def speak(jarvis,text):
     jarvis.runAndWait()
 stop=False
 def main(user_input):
-    jar = setup_jarvis()
+    jar = setup_nova()
     # while True:
     # user_input = input("Enter your question: ")
         

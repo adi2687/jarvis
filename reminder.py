@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 import threading
-from jarvis_alpha import setup_jarvis
+from nova_alpha import setup_nova
 
 def reminder(text):
     print(f"Input text: {text}")
@@ -44,10 +44,10 @@ def reminder(text):
 def trigger_reminder(message):
     print(f"Reminder: {message}")
     try:
-        orion = setup_jarvis()
+        orion = setup_nova()
         orion.say(f"Reminder to {message}")
     except Exception as e:
-        print(f"Error with Jarvis setup or speech synthesis: {e}")
+        print(f"Error with nova setup or speech synthesis: {e}")
 
 # Example usage
 # reminder("remind me to call at 5:07 p.m.")  # Handles "p.m." format

@@ -1,22 +1,23 @@
 import tkinter as tk
 from threading import Thread
-from jarvis_alpha import main,speak,setup_jarvis
+from nova_alpha import main,speak,setup_nova
 from PIL import Image, ImageSequence, ImageTk
 import speech_recognition as sr
 import json
 from keyboardfunctions import handle_keyboard_action
-from reminder import reminder
+from reminder import reminder 
 from pywhatkit import playonyt
 import webbrowser
 from AppOpener import close , open as appopen
 import requests
 from PIL import Image, ImageTk
 import google.generativeai as genai
-genai.configure(api_key=("AIzaSyBjoMgFR9t1f-4naS8mqCtcn5T7liHJero"))
+from todo import todolist
+genai.configure(api_key=("AIzaSyC_vdf5ZoD7te2A-R2tpmL0GrZgGopODfQ"))
 
 from tkinter import filedialog, Label, Button, Text, Scrollbar, VERTICAL, END, DISABLED, NORMAL
 root = tk.Tk()
-root.title("Jarvis")
+root.title("nova")
 root.geometry("800x500")  # Adjust window size for proportions
 root.configure(bg="#000000")  # Sleek dark background
 stop_flag = False
@@ -29,7 +30,7 @@ def get_response(user_text):
     global stop_flag
     try:
         submit_button.config(text="Waiting...", state="disabled")
-        jarvis = setup_jarvis()
+        nova = setup_nova()
         command=user_text
         found=False
         yt=False
@@ -59,10 +60,19 @@ def get_response(user_text):
             search_url = f"https://www.youtube.com/results?search_query={query}"
             webbrowser.open(search_url)
             speak(f"Searched for{query}")
+        elif "google" in command:
+            query = command.replace("google", "").strip()
+            search_url = f"https://www.google.com/search?q={query}"
+            webbrowser.open(search_url)
+            found=True
+        elif "list" in command:
+            found=True
+            todolist(command)
         elif "open" in command:
             found=True
             app=command.replace("open","").strip()
             Open(app)
+        
         if not found:    
             print("this is the general")
             response = main(user_text)
@@ -71,26 +81,26 @@ def get_response(user_text):
             max_retries = 10
             while not response and retry_count < max_retries:
                 if stop_flag:  # Check if stop flag is set
-                    output_label.config(text="Jarvis: Stopped.")
+                    output_label.config(text="nova: Stopped.")
                     return  # Exit the function
                 retry_count += 1
             
             if not response:
-                output_label.config(text="Jarvis: No response received. Please try again.")
+                output_label.config(text="nova: No response received. Please try again.")
             else:
-                output_label.config(text=f"Jarvis: {response}")
+                output_label.config(text=f"nova: {response}")
                 if not stop_flag:
-                    speak(jarvis, response)
+                    speak(nova, response)
     except Exception as e:
         output_label.config(text=f"Error: {e}")
     finally:
-        submit_button.config(text="Speak to Jarvis", state="normal")
+        submit_button.config(text="Speak to nova", state="normal")
 
 import speech_recognition as sr
 from threading import Thread
 
 def voice_input():
-    """Continuously listen for voice commands until `stop_flag` is set."""
+    """Continuously listen for voice commands until stop_flag is set."""
     global stop_flag
     recognizer = sr.Recognizer()
     recognizer.dynamic_energy_threshold = True  # Adjust energy threshold dynamically
@@ -99,13 +109,13 @@ def voice_input():
         try:
             with sr.Microphone() as source:
                 recognizer.adjust_for_ambient_noise(source, duration=0.5)  # Adjust for background noise
-                output_label.config(text="Jarvis: Listening for your command...")
+                output_label.config(text="nova: Listening for your command...")
 
                 # Listen for a command
                 audio = recognizer.listen(source, timeout=0, phrase_time_limit=5)
                 
                 if stop_flag:  # Break the loop if the stop flag is set
-                    output_label.config(text="Jarvis: Listening stopped.")
+                    output_label.config(text="nova: Listening stopped.")
                     break
                 
                 command = recognizer.recognize_google(audio).lower()
@@ -130,19 +140,19 @@ def voice_input():
 
         except sr.UnknownValueError:
             if not stop_flag:
-                output_label.config(text="Jarvis: I couldn't understand that. Please try again.")
+                output_label.config(text="nova: I couldn't understand that. Please try again.")
         except sr.WaitTimeoutError:
             if not stop_flag:
-                output_label.config(text="Jarvis: No input detected. Please try again.")
+                output_label.config(text="nova: No input detected. Please try again.")
         except sr.RequestError:
-            output_label.config(text="Jarvis: Issue with the recognition service.")
+            output_label.config(text="nova: Issue with the recognition service.")
         except Exception as e:
-            output_label.config(text=f"Jarvis: An unexpected error occurred: {e}")
+            output_label.config(text=f"nova: An unexpected error occurred: {e}")
 
 def stop_response():
     global stop_flag
     stop_flag = True  # Set the flag to True to interrupt speaking
-    output_label.config(text="Jarvis: Speech stopped.")  # Update UI
+    output_label.config(text="nova: Speech stopped.")  # Update UI
 
 def voice_input_thread():
     global stop_flag
@@ -161,15 +171,67 @@ def voice_input_thread():
 
 
 
-
 def display_text():
     user_text = input_box.get()
     if user_text.strip():
-        input_box.delete(0, tk.END)         
+        input_box.delete(0, tk.END)  # Clear the input box
+
+        # Add user text to the response frame
+        response_text.config(state=tk.NORMAL)
+        response_text.config(state=tk.DISABLED)
+
+        # Start a new thread to handle the AI response
         thread = Thread(target=get_response, args=(user_text,))
         thread.start()
     else:
-        output_label.config(text="Jarvis: Please enter something!")
+        # Show a message in the response frame if the input is empty
+        response_text.config(state=tk.NORMAL)
+        response_text.insert(tk.END, "nova: Please enter something!\n")
+        response_text.config(state=tk.DISABLED)
+
+# Frame for the response text
+# response_frame = tk.Frame(root, bg="#000000")
+# response_frame.place(x=100, y=100, width=500, height=300)
+
+# Ensure the frame does not resize automatically with its content
+# response_frame.pack_propagate(False)
+
+# Scrollbar for the response text
+# scrollbar = tk.Scrollbar(response_frame, orient=tk.VERTICAL)
+
+# Text widget for displaying responses
+response_text = tk.Text(
+    # response_frame,
+    wrap=tk.WORD,  # Enable word wrapping
+    bg="#000000",  # Background color
+    fg="#FFFFFF",  # Text color
+    font=("Helvetica", 12),  # Font style and size
+    # yscrollcommand=scrollbar.set,  # Link scrollbar to text widget
+    state=tk.DISABLED,  # Disable direct editing
+)
+# Configure the scrollbar to work with the Text widget
+# scrollbar.config(command=response_text.yview)
+
+# Pack the scrollbar and text widget into the frame
+# scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+response_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+# Button for triggering the display of text
+submit_button = tk.Button(
+    root,
+    text="Speak to nova",
+    command=display_text,  # This should be your function to update response_text
+    font=("Helvetica", 12, "bold"),
+    bg="#00E676",  # Button background color
+    fg="#000000",  # Button text color
+    activebackground="#000000",  # Background color when the button is active
+    activeforeground="#00E676",  # Text color when the button is active
+    bd=0,  # No border
+    relief="flat",  # Flat button style
+)
+# Position the button
+submit_button.place(x=20, y=70, width=150, height=35)
+
 
 def update_gif(frame_index=0):
     global frames
@@ -209,12 +271,13 @@ def display_chat():
 def upload_and_display_image():
     # Open a file dialog to select an image file
     file_path = filedialog.askopenfilename(
-        filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")]
+        filetypes=[("Image Files", ".jpg;.jpeg;*.png")]
     )
     if file_path:
         # Open and display the image
         img = Image.open(file_path)
-        img.thumbnail((400, 400))  # Resize for display purposes
+        img = img.resize((100, 100), Image.Resampling.LANCZOS)
+        # img.thumbnail((100, 100))  # Resize for display purposes
         img_tk = ImageTk.PhotoImage(img)
         img_label.config(image=img_tk)
         img_label.image = img_tk
@@ -282,21 +345,14 @@ input_box = tk.Entry(
 )
 input_box.place(x=20, y=20, width=300, height=35)  # Top-left corner
 
-submit_button = tk.Button(
-    root,
-    text="Speak to Jarvis",
-    command=display_text,
-    font=("Helvetica", 12, "bold"),
-    bg="#00E676",
-    fg="#000000",
-    activebackground="#000000",
-    activeforeground="#00E676",
-    bd=0,
-    relief="flat"
-)
-submit_button.place(x=20, y=70, width=150, height=35)
+def copy_to_clipboard():
+    text_to_copy = output_label.cget("text") 
+    root.clipboard_clear()  # Clear the clipboard
+    root.clipboard_append(output_label['text'])  # Copy the label's text
+    root.update()  # Ensure the clipboard gets updated
 
-output_label = tk.Label(    
+
+output_label = tk.Label(
     root,
     text="",
     font=("Helvetica", 17),
@@ -307,9 +363,19 @@ output_label = tk.Label(
 )
 output_label.place(x=10, y=120, anchor="nw")  # Positioned in the top-left corner
 
+copy_button = tk.Button(
+    root,
+    text="Copy",
+    font=("Helvetica", 12),
+    bg="#333333",  # Dark gray background
+    fg="#FFFFFF",  # White text
+    command=copy_to_clipboard
+)
+copy_button.place(x=400, y=70, anchor="nw")
+
 
 frame = tk.Frame(root, bg="#999999")
-frame.place(x=1000, y=60, anchor="nw")
+frame.place(x=1200, y=40, anchor="nw" , width=700 , height=350)
 
 
 chat_hist = tk.Text(
@@ -335,33 +401,42 @@ chatdisp = tk.Button(
     fg="#FFFFFF",
     command=display_chat
 )
-chatdisp.place(x=1000, y=500, anchor="nw")  # Adjust position as needed
+chatdisp.place(x=1200, y=400, anchor="nw")  # Adjust position as needed
 
 # thsi si the image funcitons
 import tkinter as tk
 from tkinter import Scrollbar, Text, Label, Button, VERTICAL, DISABLED
 
-iris=setup_jarvis()
-img_label = Label(root)
-img_label.pack(pady=5)
+iris=setup_nova()
+img_label = Label(root , bg="#000000")
+img_label.place(x=1450 , y = 850 , height=100 , width=200)
 
 upload_button = Button(root, text="Upload Image", command=upload_and_display_image)
-upload_button.pack(pady=3)
+upload_button.place(x=1200, y=850)
 
 analyze_button = tk.Button(
     root, text="Analyze Image", 
-    command=analyze_image(iris)
+    command=lambda: analyze_image(iris)
     )
-analyze_button.pack(pady=3)
+analyze_button.place(x=1320 , y = 850)
 
-response_frame = tk.Frame(root, bg="lightblue") 
-response_frame.place(x=0, y=400, width=700, height=400)
+response_frame = tk.Frame(root, bg="#000000")
+response_frame.place(x=1200, y=480, width=700, height=350)
 
 response_frame.pack_propagate(False)
 
 
-scrollbar = Scrollbar(response_frame, orient=VERTICAL)
-response_text = Text(response_frame, wrap=tk.WORD, width=6, height=4, state=DISABLED, yscrollcommand=scrollbar.set)
+scrollbar = Scrollbar(response_frame, orient=VERTICAL , bg="#000000")
+response_text = Text(
+    response_frame, 
+    wrap=tk.WORD, 
+    width=6, 
+    height=4, 
+    state=DISABLED, 
+    yscrollcommand=scrollbar.set,
+    bg="#000000",  # Set background to black
+    fg="#FFFFFF"   # Set text color to white for better visibility
+)
 scrollbar.config(command=response_text.yview)
 scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 response_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -380,7 +455,7 @@ def analyze_image(iris):
                 "data": image_data
             }
         ]
-
+        # analyze_button.config(text="Waiting...", state="disabled")
         # Define the input prompt
         input_prompt = """
         You are an Image Analyzer with expertise in identifying and understanding the contents of any given image. Users can upload any type of image, and your role is to provide a detailed analysis of what is present in the image along with meaningful insights.
@@ -401,6 +476,7 @@ def analyze_image(iris):
         response = (model.generate_content([input_prompt, image_parts[0]]))
         iris.say(response)
         # Display the response
+        response_text.insert(END , iris)
         response_text.config(state=NORMAL)
         response_text.delete(1.0, END)
         response_text.insert(END, response.text)
