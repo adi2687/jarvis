@@ -61,11 +61,11 @@ def create_event_with_reminder():
         'location': 'Online',
         'description': 'This is a test event.',
         'start': {
-            'dateTime': '2025-01-29T10:00:00-07:00',  # Start time in ISO 8601 format
+            'dateTime': '2025-01-30T10:00:00-07:00',  # Start time in ISO 8601 format
             'timeZone': 'America/Los_Angeles',
         },
         'end': {
-            'dateTime': '2025-01-29T11:00:00-07:00',
+            'dateTime': '2025-01-30T11:00:00-07:00',
             'timeZone': 'America/Los_Angeles',
         },
         'reminders': {

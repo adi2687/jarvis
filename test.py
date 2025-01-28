@@ -12,7 +12,10 @@ from AppOpener import close , open as appopen
 import requests
 from PIL import Image, ImageTk
 import google.generativeai as genai
-from todo import todolist
+from todo import todomain
+import requests
+import time
+import pyttsx3
 genai.configure(api_key=("AIzaSyC_vdf5ZoD7te2A-R2tpmL0GrZgGopODfQ"))
 
 from tkinter import filedialog, Label, Button, Text, Scrollbar, VERTICAL, END, DISABLED, NORMAL
@@ -21,6 +24,8 @@ root.title("nova")
 root.geometry("800x500")  # Adjust window size for proportions
 root.configure(bg="#000000")  # Sleek dark background
 stop_flag = False
+speak_enabled=True
+engine = pyttsx3.init()
 def Open(app , sess=requests.session()):
 
     appopen(app , match_closest=True , output=True , throw_error=True)
@@ -40,7 +45,7 @@ def get_response(user_text):
             query = command.replace("play ", "").replace(" on youtube", "").strip()
             playonyt(query)
         keyboardlist = [
-                    "increase","decrease", "mute", "unmute", "play", "pause","next track", "prev track", "type", "find",
+                    "increase","decrease", "mute", "unmute", "play", "pause","next track", "previous track", "type", "find",
                     "screenshot"
                 ]
         for char in keyboardlist:
@@ -65,14 +70,31 @@ def get_response(user_text):
             search_url = f"https://www.google.com/search?q={query}"
             webbrowser.open(search_url)
             found=True
-        elif "list" in command:
+        elif "list" in command or "calendar" in command or "tasks" in command or "remove" in command :
             found=True
-            todolist(command)
+            todomain(command)
         elif "open" in command:
             found=True
             app=command.replace("open","").strip()
             Open(app)
-        
+        elif "amazon" in command:
+            found=True
+            # query = command.replace("search on amazon ", "").strip()
+            query = ""
+            querybool = False
+
+            for char in command:
+                if querybool:
+                    query += char  # Start capturing the query after "for"
+                elif query.endswith("for"):
+                    querybool = True
+                    query = ""  # Reset query after detecting "for"
+                else:
+                    query += char
+
+            # print(query.strip()) 
+            search_url = f"https://www.amazon.com/s?k={query}"
+            webbrowser.open(search_url)
         if not found:    
             print("this is the general")
             response = main(user_text)
@@ -89,7 +111,7 @@ def get_response(user_text):
                 output_label.config(text="nova: No response received. Please try again.")
             else:
                 output_label.config(text=f"nova: {response}")
-                if not stop_flag:
+                if speak_enabled:
                     speak(nova, response)
     except Exception as e:
         output_label.config(text=f"Error: {e}")
@@ -121,20 +143,7 @@ def voice_input():
                 command = recognizer.recognize_google(audio).lower()
                 output_label.config(text=f"Recognized: {command}")
 
-                # keyboardlist = [
-                #     "increase","decrease", "mute", "unmute", "play", "pause",
-                #     "next track", "prev track", "type", "find",
-                #     "screenshot", "close"
-                # ]
-                # for char in keyboardlist:
-                #     if char in command:
-                #         # print("keyword is here ")
-                #         # print(char)
-                #         handle_keyboard_action(char)
-                #         continue
-                # if "reminder" in command:
-                #     reminder(command)
-                # else:
+             
                 thread = Thread(target=get_response, args=(command,))
                 thread.start()
 
@@ -150,9 +159,19 @@ def voice_input():
             output_label.config(text=f"nova: An unexpected error occurred: {e}")
 
 def stop_response():
-    global stop_flag
-    stop_flag = True  # Set the flag to True to interrupt speaking
+    global speak_enabled
+    speak_enabled = False
+    engine.stop()
     output_label.config(text="nova: Speech stopped.")  # Update UI
+    toggle_speech()
+
+def toggle_speech():
+    global speak_enabled
+    if speak_enabled:
+        stop_response()
+    else:
+        speak_enabled = True
+        print("Speech Enabled.")
 
 def voice_input_thread():
     global stop_flag
@@ -170,8 +189,17 @@ def voice_input_thread():
 
 
 
+# Function to speak the text
+def speak_text(text):
+    global speak_enabled
+    if speak_enabled:
+        engine.say(text)
+        engine.runAndWait()
 
 def display_text():
+    global speak_enabled
+    speak_enabled = True
+
     user_text = input_box.get()
     if user_text.strip():
         input_box.delete(0, tk.END)  # Clear the input box
@@ -283,7 +311,66 @@ def upload_and_display_image():
         img_label.image = img_tk
         img_label.file_path = file_path  # Store file path for analysis
 
-# Function to analyze the uploaded image
+# Function to get location by IP
+def get_location_by_ip():
+    try:
+        response = requests.get("https://ipinfo.io/json")  # API for IP location
+        data = response.json()
+        
+        # Extract location details
+        city = data.get('city', 'Unknown City')
+        region = data.get('region', 'Unknown Region')
+        country = data.get('country', 'Unknown Country')
+        loc = data.get('loc', '0,0')  # Latitude and Longitude
+        
+        # Split latitude and longitude
+        latitude, longitude = loc.split(',')
+        
+        # Format location string
+        location = f"{city}, {region}, {country}"
+        
+        # Return all details
+        return location, latitude, longitude
+    except Exception as e:
+        return "Unable to fetch location", None, None
+    
+location, latitude, longitude = get_location_by_ip()
+API_KEY = "fc3b1eb09d67c9ebd2d39e4fc7d2bb41"
+
+# Function to get weather using latitude and longitude
+def get_weather(lat, lon, api_key):
+    try:
+        # OpenWeatherMap API URL
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        
+        response = requests.get(url)
+        weather_data = response.json()
+        
+        # Extract weather information
+        if response.status_code == 200:
+            temperature = weather_data['main']['temp']
+            weather_desc = weather_data['weather'][0]['description']
+            humidity = weather_data['main']['humidity']
+            wind_speed = weather_data['wind']['speed']
+            
+            return f"{temperature}°C {weather_desc.capitalize()}"
+        else:
+            return f"Error: {weather_data.get('message', 'Unable to fetch weather')}"
+    except Exception as e:
+        return "An error occurred while fetching weather"
+
+weather_data = get_weather(latitude, longitude, API_KEY)
+
+# Function to get and update the current time
+def update_time():
+    # Get the current time in HH:MM:SS format
+    current_time = time.strftime("%H:%M:%S")
+    
+    # Update the time label with the current time
+    time_label.config(text=current_time)
+    
+    # Call the update_time function after 1000 ms (1 second)
+    time_label.after(1000, update_time)
 
 gif_path = "Sirifinal.gif"  # Replace with the path to your GIF
 image = Image.open(gif_path)
@@ -296,22 +383,22 @@ frames = [
 ]
 
 gif_label = tk.Label(root, bg="#000000")
-gif_label.place(relx=0.5, rely=0.5, anchor="center")  # Positioned at 70% width and center height
+gif_label.place(relx=0.5, rely=0.6, anchor="center")  # Positioned at 70% width and center height
 update_gif()
 
-stop_button = tk.Button(
-    root,
-    text="Stop",
-    command=stop_response,
-    font=("Helvetica", 12, "bold"),
-    bg="#FF5252",
-    fg="#FFFFFF",   
-    activebackground="#FF1744",
-    activeforeground="#FFFFFF",
-    bd=0,
-    relief="flat"
-)
-stop_button.place(x=180, y=70, width=100, height=35)
+# stop_button = tk.Button(
+#     root,
+#     text="Stop",
+#     command=stop_response,
+#     font=("Helvetica", 12, "bold"),
+#     bg="#FF5252",
+#     fg="#FFFFFF",   
+#     activebackground="#FF1744",
+#     activeforeground="#FFFFFF",
+#     bd=0,
+#     relief="flat"
+# )
+# stop_button.place(x=180, y=70, width=100, height=35)
 
 
 voice_button = tk.Button(
@@ -343,7 +430,7 @@ input_box = tk.Entry(
     highlightthickness=1,
     highlightbackground="#00E676"
 )
-input_box.place(x=20, y=20, width=300, height=35)  # Top-left corner
+input_box.place(x=20, y=20, width=600, height=35)  # Top-left corner
 
 def copy_to_clipboard():
     text_to_copy = output_label.cget("text") 
@@ -419,6 +506,29 @@ analyze_button = tk.Button(
     command=lambda: analyze_image(iris)
     )
 analyze_button.place(x=1320 , y = 850)
+
+# Load an image using PIL
+image = Image.open("weather.jpg")  # Replace with your image file path
+image = image.resize((35, 35))  # Resize the image to fit the button
+photo = ImageTk.PhotoImage(image)
+
+weather_button = tk.Button(
+    root, image=photo, bg="black" , borderwidth=0 , highlightthickness=0
+    )
+weather_button.place(x=820 , y =235)
+
+weather_info = tk.Text(
+    root, fg="white" , bg="black", font=("Arial", 22, "italic") ,  borderwidth=0 , highlightthickness=0
+    )
+weather_info.place(x=870 , y = 230 , height=70 , width=300)
+weather_info.insert("1.0", weather_data)
+
+# Create a label to display the time
+time_label = tk.Label(root, font=("LED Board", 27, "italic"), fg="white", bg="black")
+time_label.place(x=870 , y = 300 , height=70 , width=200)
+
+# Call the function to update the time
+update_time()
 
 response_frame = tk.Frame(root, bg="#000000")
 response_frame.place(x=1200, y=480, width=700, height=350)

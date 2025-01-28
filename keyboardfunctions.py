@@ -36,13 +36,13 @@ def handle_keyboard_action(command):
         volume_up()
     elif command=="decrease":
         volume_down()
-    elif command == "mute":
+    elif command == "mute" or command=="unmute":
         mute()
     elif command == "play" or command == "pause":
         play()
     elif command == "next track":
         next_track()
-    elif command == "prev track":
+    elif command == "previous track":
         previous_track()
     elif command == "type":
         type_message("jarvis")
